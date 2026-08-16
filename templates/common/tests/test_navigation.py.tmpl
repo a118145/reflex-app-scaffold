@@ -10,6 +10,7 @@ import pytest
 
 from {{app_name}}.navigation.nav_config import (
     NAV_ITEMS,
+    label_for_route,
     resolve_active_route,
     section_index_for,
 )
@@ -32,6 +33,24 @@ def test_sibling_prefix_does_not_match() -> None:
 
 def test_unknown_path_falls_back_to_home() -> None:
     assert resolve_active_route("/nope/nowhere") == "/"
+
+
+@pytest.mark.parametrize("item", NAV_ITEMS)
+def test_label_for_route_names_the_visible_menu_entry(item: dict) -> None:
+    """Back-links must name what the user actually sees in the menu.
+
+    Sub-items win, so this is the sidebar entry where there is one and the
+    top-bar entry otherwise — correct in all three layouts.
+    """
+    subs = item.get("sub_items", [])
+    if subs:
+        assert label_for_route(subs[0]["route"]) == subs[0]["label"]
+    else:
+        assert label_for_route(item["route"]) == item["label"]
+
+
+def test_label_for_unknown_route_is_empty() -> None:
+    assert label_for_route("/not-in-the-menu") == ""
 
 
 @pytest.mark.parametrize("item", NAV_ITEMS)

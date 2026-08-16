@@ -104,6 +104,32 @@ When creating tables against a non-Reflex database, always filter:
   `select`, `accordion`, `data_list`, `callout`, `form`, `color_mode`.
 - Dict Vars support `.get(key, default)`, `.contains(key)`, `.keys()`.
   Non-string Vars need `.to_string()` before use as text.
+- **`rx.icon_button(size=...)` overwrites its child icon's size.**
+  `IconButton.create` maps the Radix button size onto the Lucide icon through
+  a fixed table — `{"1": 12, "2": 24, "3": 36, "4": 48}` — so
+  `rx.icon_button(rx.icon("pencil", size=18), size="2")` renders an icon at
+  **24**, not 18, with no warning. Size the icon and omit the button's `size`
+  when you want a value between the steps. `IconButton.add_style` also adds a
+  fixed `padding: 6px`, which is part of the hover box.
+
+## Verifying styling
+
+`Component.render()` does **not** run `add_style`, so inspecting it will show
+a component as unstyled even when the style is applied correctly. `rx.center`
+is the trap case: `rx.center(x).render()["props"]` is `[]`, which looks like a
+no-op wrapper, while the compiled output carries
+`display/alignItems/justifyContent: center` from `Center.add_style`.
+
+Check styling against the compiled frontend, not against `.render()`:
+
+```bash
+# app_components/<app_name>/ holds the per-page components; app/routes/ the pages
+grep -o 'justifyContent[^,]*' .web/app_components/<app_name>/pages/<page>.jsx
+```
+
+Those files are minified onto very long lines — use Python or `grep -o` with a
+bounded pattern. An unanchored `grep -E` with `[^)]{0,120}`-style quantifiers
+will backtrack catastrophically and hang.
 - `list[SQLModelClass]` works as a state var; attribute access compiles to a
   dict lookup on the frontend. `Decimal` serialises to a JSON float and
   `datetime` to a string.
