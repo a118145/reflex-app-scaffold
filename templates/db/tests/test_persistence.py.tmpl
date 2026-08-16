@@ -1,0 +1,122 @@
+"""End-to-end persistence: form strings in, correctly typed rows out.
+
+Runs against a real SQLite file (not a mock) so the column types Alembic
+generated are actually exercised — the point is to prove that a form's
+``"12.50"`` survives the round trip as ``Decimal("12.50")`` and not as a float
+or a string.
+"""
+
+from collections.abc import Iterator
+from decimal import Decimal
+from pathlib import Path
+
+import pytest
+import reflex as rx
+from sqlmodel import SQLModel, create_engine, select
+
+from {{app_name}}.models import Item, ItemForm
+from {{app_name}}.utils.validation import parse_form
+
+
+@pytest.fixture
+def db_url(tmp_path: Path) -> Iterator[str]:
+    """A throwaway database with only the item table created."""
+    url = f"sqlite:///{tmp_path / 'test.db'}"
+    engine = create_engine(url)
+    # Filtered create_all: never create every model registered in the global
+    # SQLModel metadata into an unrelated database.
+    SQLModel.metadata.create_all(engine, tables=[SQLModel.metadata.tables["item"]])
+    yield url
+    engine.dispose()
+
+
+def _submit(db_url: str, form: dict[str, str]) -> Item:
+    """The path an on_submit handler takes: cast, validate, insert."""
+    parsed, errors = parse_form(form, ItemForm)
+    assert errors == {}, errors
+    assert parsed is not None
+
+    with rx.session(url=db_url) as session:
+        item = Item(**parsed.model_dump())
+        session.add(item)
+        session.commit()
+        session.refresh(item)
+        return item
+
+
+def test_create_stores_correct_python_types(db_url: str) -> None:
+    created = _submit(
+        db_url,
+        {"name": "Widget", "quantity": "7", "price": "12.50", "note": "hello"},
+    )
+    assert created.id is not None
+
+    with rx.session(url=db_url) as session:
+        stored = session.get(Item, created.id)
+
+    assert stored is not None
+    assert stored.name == "Widget"
+    assert stored.quantity == 7
+    assert isinstance(stored.quantity, int)
+    assert stored.price == Decimal("12.50")
+    assert isinstance(stored.price, Decimal)
+    assert stored.note == "hello"
+
+
+def test_blank_optional_persists_as_null(db_url: str) -> None:
+    created = _submit(db_url, {"name": "W", "quantity": "1", "price": "1.00", "note": ""})
+
+    with rx.session(url=db_url) as session:
+        stored = session.get(Item, created.id)
+
+    assert stored is not None
+    assert stored.note is None, "empty input must become NULL, not an empty string"
+
+
+def test_update_round_trip(db_url: str) -> None:
+    created = _submit(db_url, {"name": "Old", "quantity": "1", "price": "1.00"})
+
+    parsed, errors = parse_form({"name": "New", "quantity": "9", "price": "3.25"}, ItemForm)
+    assert errors == {}
+    assert parsed is not None
+
+    with rx.session(url=db_url) as session:
+        existing = session.get(Item, created.id)
+        assert existing is not None
+        for field, value in parsed.model_dump().items():
+            setattr(existing, field, value)
+        session.add(existing)
+        session.commit()
+
+    with rx.session(url=db_url) as session:
+        stored = session.get(Item, created.id)
+
+    assert stored is not None
+    assert stored.name == "New"
+    assert stored.quantity == 9
+    assert stored.price == Decimal("3.25")
+
+
+def test_delete_removes_the_row(db_url: str) -> None:
+    created = _submit(db_url, {"name": "Doomed", "quantity": "1", "price": "1.00"})
+
+    with rx.session(url=db_url) as session:
+        item = session.get(Item, created.id)
+        assert item is not None
+        session.delete(item)
+        session.commit()
+
+    with rx.session(url=db_url) as session:
+        assert session.get(Item, created.id) is None
+        assert list(session.exec(select(Item)).all()) == []
+
+
+def test_invalid_input_never_reaches_the_database(db_url: str) -> None:
+    parsed, errors = parse_form(
+        {"name": "Bad", "quantity": "not-a-number", "price": "1.00"}, ItemForm
+    )
+    assert parsed is None
+    assert "quantity" in errors
+
+    with rx.session(url=db_url) as session:
+        assert list(session.exec(select(Item)).all()) == []

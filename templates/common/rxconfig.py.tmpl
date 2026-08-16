@@ -1,0 +1,21 @@
+{{DB_IMPORT}}import reflex as rx
+
+config = rx.Config(
+    app_name="{{app_name}}",
+{{DB_URL_LINE}}    default_color_mode="system",
+    plugins=[
+        # Declare the theme here, not via rx.App(theme=...) — that argument is
+        # deprecated in 0.9.x. Declaring the plugin explicitly also suppresses
+        # the "implicit Radix Themes enablement" deprecation warning.
+        rx.plugins.RadixThemesPlugin(
+            theme=rx.theme(
+                accent_color="{{accent_color}}",
+                gray_color="slate",
+                radius="medium",
+                scaling="100%",
+            ),
+        ),
+        rx.plugins.TailwindV4Plugin(),
+        rx.plugins.SitemapPlugin(),
+    ],
+)

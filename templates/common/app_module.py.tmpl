@@ -1,0 +1,20 @@
+"""App entry point.
+
+Two jobs only: configure logging, and import the page modules so their
+``@rx.page`` decorators register. Routes themselves are declared next to the
+pages, and their paths come from ``navigation/routes.py``.
+"""
+
+import reflex as rx
+
+# Importing this package runs every @rx.page decorator — that import IS the
+# route registration. Dropping it leaves an app with no pages.
+from . import pages
+from .utils.logging import configure_logging, get_logger
+
+configure_logging()
+log = get_logger(__name__)
+
+app = rx.App()
+
+log.info("app.start", pages=len(pages.__all__))

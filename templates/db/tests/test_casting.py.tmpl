@@ -1,0 +1,78 @@
+"""Form casting and validation.
+
+Forms hand over ``dict[str, str]``; the model wants real types. These tests
+pin the coercion rules and the error shape the dialog renders.
+"""
+
+from decimal import Decimal
+
+import pytest
+
+from {{app_name}}.models import ItemForm
+from {{app_name}}.utils.casting import FormCastError, cast_form_data
+from {{app_name}}.utils.validation import parse_form
+
+
+def test_casts_strings_to_model_types() -> None:
+    data = cast_form_data(
+        {"name": "Widget", "quantity": "7", "price": "12.50", "note": "hi"},
+        ItemForm,
+    )
+    assert data == {
+        "name": "Widget",
+        "quantity": 7,
+        "price": Decimal("12.50"),
+        "note": "hi",
+    }
+    assert isinstance(data["quantity"], int)
+    assert isinstance(data["price"], Decimal)
+
+
+def test_unknown_keys_are_dropped() -> None:
+    """Forms carry extras (button names); they must not reach the model."""
+    data = cast_form_data({"name": "W", "quantity": "1", "price": "0", "submit": "x"}, ItemForm)
+    assert "submit" not in data
+
+
+def test_blank_optional_becomes_none() -> None:
+    data = cast_form_data({"name": "W", "quantity": "1", "price": "0", "note": ""}, ItemForm)
+    assert data["note"] is None
+
+
+def test_blank_required_is_an_error() -> None:
+    with pytest.raises(FormCastError) as exc:
+        cast_form_data({"name": "W", "quantity": "", "price": "0"}, ItemForm)
+    assert "quantity" in exc.value.errors
+
+
+def test_all_cast_errors_reported_at_once() -> None:
+    with pytest.raises(FormCastError) as exc:
+        cast_form_data({"name": "W", "quantity": "abc", "price": "xyz"}, ItemForm)
+    assert set(exc.value.errors) == {"quantity", "price"}
+
+
+def test_parse_form_returns_instance_on_success() -> None:
+    item, errors = parse_form({"name": "Widget", "quantity": "3", "price": "1.00"}, ItemForm)
+    assert errors == {}
+    assert item is not None
+    assert item.name == "Widget"
+    assert item.quantity == 3
+
+
+def test_parse_form_surfaces_validation_errors() -> None:
+    """Casting succeeds (-1 is a valid int) but the model rejects it."""
+    item, errors = parse_form({"name": "W", "quantity": "-1", "price": "1.00"}, ItemForm)
+    assert item is None
+    assert "quantity" in errors
+
+
+def test_parse_form_surfaces_cast_errors_in_the_same_shape() -> None:
+    item, errors = parse_form({"name": "W", "quantity": "abc", "price": "1.00"}, ItemForm)
+    assert item is None
+    assert "quantity" in errors
+
+
+def test_blank_name_is_rejected_by_the_validator() -> None:
+    item, errors = parse_form({"name": "   ", "quantity": "1", "price": "1.00"}, ItemForm)
+    assert item is None
+    assert "name" in errors

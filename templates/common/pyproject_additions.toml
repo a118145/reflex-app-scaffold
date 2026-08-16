@@ -1,0 +1,68 @@
+# Append these blocks to the pyproject.toml that `uv init` created.
+# Replace {{app_name}} with the real package name.
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+exclude = [".web", "alembic"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+ignore = [
+    "E501",   # line length is handled by the formatter
+    "A002",   # `open` shadows a builtin — it is Radix's prop name
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/__init__.py" = ["F401"]  # re-exports
+# RUF012 flags `items: list[Item] = []` on state classes. Reflex deep-copies
+# field defaults per state instance, so the shared-mutable-default hazard the
+# rule targets does not exist here, and plain literals are the idiomatic
+# Reflex spelling.
+"{{app_name}}/states/*.py" = ["RUF012"]
+"{{app_name}}/navigation/state.py" = ["RUF012"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["{{app_name}}", "tests"]
+exclude = "(^\\.web/|^alembic/)"
+strict = true
+# Reflex's Var system rewrites attribute access at class level, so state
+# classes are full of expressions mypy cannot follow. These are the minimum
+# relaxations that keep the rest of the codebase genuinely strict.
+disallow_any_generics = false
+warn_return_any = false
+
+[[tool.mypy.overrides]]
+module = ["reflex.*", "reflex_base.*", "sqlmodel.*"]
+follow_untyped_imports = true
+
+[[tool.mypy.overrides]]
+# Components and pages read state vars at class level, where `State.items` is
+# a Var even though it is annotated `list[Item]`. mypy sees the annotation and
+# reports every Var operation (`.to_string()`, `.contains()`, event handlers
+# called as `Handler(arg)`) as an error. These codes are switched off here
+# rather than globally, so name errors, bad imports and unreachable code are
+# still caught in these modules — and the pure-Python layers (utils, models,
+# navigation, states) stay fully strict.
+module = ["{{app_name}}.components.*", "{{app_name}}.pages.*"]
+disable_error_code = [
+    "attr-defined",
+    "union-attr",
+    "arg-type",
+    "operator",
+    "untyped-decorator",
+]
+
+[[tool.mypy.overrides]]
+# Event handlers return event specs, lists of them, or None depending on the
+# branch — annotating that union adds noise without catching anything.
+module = ["{{app_name}}.states.*"]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# A Reflex app is run from the project root, not installed as a package, so
+# the app module is only importable if the root is on sys.path.
+pythonpath = ["."]
