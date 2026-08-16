@@ -23,21 +23,32 @@ def _row(item: Item) -> rx.Component:
             rx.cond(item.note, item.note, rx.text("—", color_scheme="gray")),
         ),
         rx.table.cell(
+            # Row actions. `variant="ghost"` draws no border, so the only
+            # visible bounds are the hover backgrounds — at the default gap
+            # those two squares touch and read as a single control. A
+            # destructive action sitting next to an edit needs clearly
+            # separated hit targets, hence the explicit gap.
+            #
+            # Do NOT add `size=` to these buttons: `IconButton.create`
+            # overwrites its child icon's size from a fixed table
+            # ({"1": 12, "2": 24, "3": 36, "4": 48}), so the `size=18` below
+            # would be silently discarded and the icons would jump to 12 or
+            # 24px. Size the icon, not the button.
             rx.hstack(
                 rx.icon_button(
-                    rx.icon("pencil", size=15),
+                    rx.icon("pencil", size=18),
                     variant="ghost",
                     title="Edit",
                     on_click=ItemsState.open_edit(item.id),
                 ),
                 rx.icon_button(
-                    rx.icon("trash-2", size=15),
+                    rx.icon("trash-2", size=18),
                     variant="ghost",
                     color_scheme="red",
                     title="Delete",
                     on_click=ItemsState.ask_delete(item.id),
                 ),
-                spacing="1",
+                spacing="3",
                 justify="end",
             ),
             text_align="right",

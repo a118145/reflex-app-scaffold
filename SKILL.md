@@ -14,22 +14,52 @@ material online is stale and will lead you to write deprecated code.
 
 ## Step 1 — Interview
 
-Ask these four questions in **one** `AskUserQuestion` call. Do not scaffold
-before you have the answers.
+Five questions in two calls: the shape of the app, then the menu. They are
+split because `AskUserQuestion` takes at most four, and because the menu
+default depends on the layout answered in the first call. Do not scaffold
+before both phases are done.
+
+### Phase A — one `AskUserQuestion` call, four questions
 
 1. **App name** — Python package name, `snake_case` (e.g. `motor_toolbox`).
    Also derive `{{app_title}}`, the display name shown in the nav chrome
    (e.g. "Motor Toolbox").
 2. **Layout** — `both` (top bar = sections, sidebar = that section's
    sub-pages), `top` (top bar only, one level), or `side` (sidebar only, flat).
+   Sketch each one as an ASCII `preview` — the difference is spatial and a
+   picture settles it faster than a sentence.
 3. **Database** — SQLModel + SQLite + alembic with a working CRUD demo page,
    or no database.
-4. **Sections and pages** — the nav tree. For `both`, sections with sub-pages;
-   for `top`/`side`, a flat list is fine. Offer a sensible default
-   (`Home [Welcome, Getting started]`, `About`) so the user can just accept.
+4. **Top bar alignment** — `left` (default) or `center`, filling
+   `{{nav_alignment}}` in `ui/nav.py`. Ask it here regardless, and say it only
+   applies to `top` and `both`; for `side` there is no top bar, so discard the
+   answer rather than asking a fifth question later.
 
 Also ask for an accent colour only if the user seems to care; otherwise use
 `blue`. Valid values are the 26 Radix accents.
+
+### Phase B — the menu structure
+
+**One `AskUserQuestion` call, one question.** Ask for the nav tree and offer a
+default concrete enough to accept in one keystroke — `Home`, `About`, plus a
+CRUD section when database == yes; for `both`, sections with their sub-pages
+(`Home [Welcome, Getting started]`). Tailor the default to the layout chosen
+in Phase A: a flat list for `top` and `side`, two levels for `both`.
+
+A section may legitimately have no sub-pages — the sidebar then renders its
+heading above an empty submenu. That is a valid outcome, not a gap to fill
+with an invented page.
+
+Restate the tree before scaffolding so a misunderstanding costs one correction
+rather than a regeneration.
+
+**Do not walk the tree section by section.** That was built and deliberately
+reverted. Asking per section only looks more rigorous: to be genuinely
+consistent it would also have to ask, for every page, whether it needs a model
+and a database table — and that interrogation costs far more than the edit it
+saves. The nav tree is a handful of lines across `nav_config.py`, `routes.py`
+and `pages/`; users adjust it afterwards by hand or with a coding agent. Ask
+once, offer a default, move on.
 
 ## Step 2 — Project setup
 
@@ -53,8 +83,18 @@ have verified API facts in `references/`.
 ## Step 3 — Write the tree
 
 Copy from `templates/`, substituting `{{app_name}}` and `{{app_title}}`.
-`.tmpl` files carry placeholders; plain `.py` files are copied verbatim
-(except `{{app_title}}` in the layout files).
+`.tmpl` files carry placeholders; plain `.py` files are copied verbatim, with
+two exceptions in `templates/layout_*/ui/`:
+
+| Placeholder | File | Value |
+|---|---|---|
+| `{{app_title}}` | `nav.py` (top, both), `side.py` (both, side) | the display name |
+| `{{nav_alignment}}` | `nav.py` (top, both only) | `"left"` or `"center"` |
+
+Grep the copied tree for `{{` before moving on — a placeholder that survives
+into the generated app is a syntax-valid string that silently does the wrong
+thing (`NAV_ALIGNMENT = "{{nav_alignment}}"` just falls through to the `left`
+branch).
 
 ```
 templates/common/          -> always
@@ -134,8 +174,21 @@ CRUD and detail pages, and the db tests.
 
 ## Step 5 — Verify
 
-Format first (hand-written `routes.py` / `nav_config.py` / test parameters
-will not be formatter-clean), then all four must pass:
+**Check ruff's scope before running `ruff format .`.** A formatter that walks
+into `.venv` reformats every installed dependency and still exits 0, so no
+other gate can catch it:
+
+```bash
+uv run ruff check --show-files . | grep -Ev "^$PWD/(<app_name>|tests)/|^$PWD/(rxconfig|pyproject)" \
+  && echo "❌ ruff scope leaks outside the project" || echo "✅ scope clean"
+```
+
+Anything listed outside the app package, `tests/`, `rxconfig.py` and
+`pyproject.toml` means `[tool.ruff]` is using `exclude` instead of
+`extend-exclude` — fix that before formatting.
+
+Then format (hand-written `routes.py` / `nav_config.py` / test parameters
+will not be formatter-clean), and all four must pass:
 
 ```bash
 uv run ruff format .
@@ -147,6 +200,10 @@ uv run ruff check . && uv run ruff format --check .
 
 A deprecation warning means a fact in `references/reflex_098_gotchas.md` was
 missed. Fix it rather than suppressing the warning.
+
+Exit codes are not enough on their own: `ruff format` reports success no
+matter how many files it touched, so check *what* a tool acted on, not only
+whether it succeeded.
 
 Then start the app (`uv run reflex run`) and confirm each route returns 200:
 

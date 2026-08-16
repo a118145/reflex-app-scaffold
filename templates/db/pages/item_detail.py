@@ -1,16 +1,22 @@
-"""Data > item detail — dynamic route.
+"""Item detail — dynamic route.
 
 The route pattern ``/data/[item_id]`` makes Reflex inject ``item_id`` into
-every state. Note this page has no nav entry: the sidebar still highlights
-*Items* because ``NavState.active_route`` resolves ``/data/5`` to ``/data``
-by longest-prefix match.
+every state. Note this page has no nav entry: the menu still highlights its
+parent because ``NavState.active_route`` resolves ``/data/5`` to ``/data`` by
+longest-prefix match.
 """
 
 import reflex as rx
 
 from ..navigation import routes
+from ..navigation.nav_config import label_for_route
 from ..states.item_detail_state import ItemDetailState
 from ..ui.base import base_page
+
+# Read from the nav config rather than written out, so the back link names
+# whatever the menu actually calls this section. A plain Python constant, so
+# it is resolved at compile time.
+_PARENT_LABEL = label_for_route(routes.DATA_ROUTE)
 
 
 def _row(label: str, value: rx.Var | str) -> rx.Component:
@@ -66,7 +72,7 @@ def item_detail() -> rx.Component:
             rx.link(
                 rx.hstack(
                     rx.icon("arrow-left", size=15),
-                    rx.text("Back to items", size="2"),
+                    rx.text(f"Back to {_PARENT_LABEL}", size="2"),
                     align="center",
                     spacing="1",
                 ),

@@ -4,7 +4,11 @@
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-exclude = [".web", "alembic"]
+# extend-exclude, never exclude. Plain `exclude` REPLACES ruff's built-in
+# default list (`.venv`, `.git`, `__pycache__`, `node_modules`, ...), so
+# `ruff format .` would walk into site-packages and reformat every installed
+# dependency — silently, and with exit code 0.
+extend-exclude = [".web", "alembic"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]

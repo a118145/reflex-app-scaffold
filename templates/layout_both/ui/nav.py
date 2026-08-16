@@ -12,6 +12,11 @@ from .side import SIDEBAR_WIDTH
 
 NAVBAR_HEIGHT = "4em"
 
+# Where the section links sit in the bar: "left" (packed against the sidebar)
+# or "center". A plain Python constant, so the branch below is resolved at
+# compile time — flip the word and restart, no regeneration needed.
+NAV_ALIGNMENT: str = "{{nav_alignment}}"
+
 
 def _section_target(item: NavItem) -> str:
     """Where a section link goes: its first sub-page, else the section route."""
@@ -45,18 +50,37 @@ def navbar_item(item: NavItem, index: int) -> rx.Component:
 
 
 def navbar() -> rx.Component:
-    return rx.box(
-        rx.hstack(
-            rx.hstack(
-                *[navbar_item(item, i) for i, item in enumerate(NAV_ITEMS)],
-                spacing="3",
-                align="center",
+    links = rx.hstack(
+        *[navbar_item(item, i) for i, item in enumerate(NAV_ITEMS)],
+        spacing="3",
+        align="center",
+    )
+
+    if NAV_ALIGNMENT == "center":
+        # The colour-mode button is taken out of the flex row and pinned to the
+        # right edge. Left in the row it would occupy real width, pushing the
+        # links off-centre by half the button — visibly wrong on a wide screen.
+        # It anchors against the fixed-position box below.
+        content: rx.Component = rx.fragment(
+            rx.center(links, width="100%"),
+            rx.color_mode.button(
+                position="absolute",
+                right="1em",
+                top="50%",
+                transform="translateY(-50%)",
             ),
+        )
+    else:
+        content = rx.hstack(
+            links,
             rx.spacer(),
             rx.color_mode.button(),
             align="center",
             width="100%",
-        ),
+        )
+
+    return rx.box(
+        content,
         background=rx.color("accent", 3),
         padding_x="1em",
         height=NAVBAR_HEIGHT,
