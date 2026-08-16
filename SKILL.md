@@ -172,6 +172,18 @@ Without a database also drop `models/`, `states/items_state.py`,
 `states/item_detail_state.py`, `components/{item_dialog,data_table}.py`, the
 CRUD and detail pages, and the db tests.
 
+**Keep `states/` either way**, with a docstring-only `__init__.py` when it
+would otherwise be empty. It is a placeholder, not dead weight: it marks the
+obvious home for the first state class and leaves the decision of what to put
+there — and whether to keep the package at all — to the app's author rather
+than to the scaffold. Use the docstring to carry the rules that would
+otherwise be lost: states subclass `rx.State` directly, share via
+`await self.get_state(Other)`, and `NavState` lives in `navigation/`.
+
+`models/` is different — drop it entirely. An empty `states/` names a decision
+still to be made; an empty `models/` would imply a persistence layer the app
+does not have.
+
 ## Step 5 — Verify
 
 **Check ruff's scope before running `ruff format .`.** A formatter that walks

@@ -3,8 +3,11 @@
 Append this to the generated `AGENTS.md`, **outside** the
 `<!-- reflex managed ... -->` markers (`reflex init` rewrites the inside).
 `CLAUDE.md` created by `reflex init` is just `@AGENTS.md`, so this reaches
-Claude Code sessions too. Replace `{{app_name}}` and drop rows for folders the
-app does not have.
+Claude Code sessions too. Replace `{{app_name}}` and drop folder-contract rows
+for folders the app does not have — a database-less app has no `models/`, and
+documenting a folder that is not there sends the next reader looking for it.
+Nothing outside the table names an individual folder, so the table is the only
+place that needs pruning.
 
 ---
 
@@ -57,8 +60,7 @@ advice. Read it before editing.
 
 ## Type checking
 
-`mypy .` is strict for `utils/`, `models/`, `navigation/` and `tests/`. In
-`components/` and `pages/`, several error codes are disabled in
-`pyproject.toml` because mypy cannot see through Reflex's Var system. Do not
-add `# type: ignore` comments there, and do not rewrite Var expressions to
-satisfy a type checker that cannot read them.
+`mypy .` is strict everywhere except `components/` and `pages/`, where several
+error codes are disabled in `pyproject.toml` because mypy cannot see through
+Reflex's Var system. Do not add `# type: ignore` comments there, and do not
+rewrite Var expressions to satisfy a type checker that cannot read them.
