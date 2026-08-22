@@ -22,7 +22,7 @@ No authentication — that is deliberately out of scope.
 ## Install
 
 ```bash
-git clone https://github.com/<you>/reflex-app-scaffold \
+git clone https://github.com/a118145/reflex-app-scaffold \
   ~/.claude/skills/reflex-app-scaffold
 ```
 
