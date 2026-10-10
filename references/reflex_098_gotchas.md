@@ -134,6 +134,15 @@ will backtrack catastrophically and hang.
   dict lookup on the frontend. `Decimal` serialises to a JSON float and
   `datetime` to a string.
 
+## Lockfiles
+
+`reflex.lock/` (created on the first compile) holds `bun.lock` and
+`package.json`: the frozen lockfile Reflex installs the frontend packages
+from. **Commit it, never gitignore it.** It is to the frontend what `uv.lock`
+is to Python. Without it every fresh checkout and every CI or Docker build
+resolves new JS package versions. Verified in `reflex/utils/js_runtimes.py`:
+a mismatch fails with "lockfile had changes, but lockfile is frozen".
+
 ## Type checking
 
 mypy cannot see through the Var system: at class level `State.items` is a

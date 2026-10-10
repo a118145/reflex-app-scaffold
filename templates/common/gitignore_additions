@@ -3,5 +3,6 @@
 .ruff_cache/
 .pytest_cache/
 
-# Reflex
-reflex.lock
+# Reflex. `reflex.lock/` is deliberately NOT ignored: it is Reflex's frozen
+# JS lockfile (bun.lock + package.json), the frontend counterpart of uv.lock.
+# Commit it, or every fresh checkout and CI build resolves new JS versions.
