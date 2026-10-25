@@ -43,9 +43,10 @@ lanes that come after the scaffold only touch their own page files.
 - The `crud: true` entry becomes `DATA_ROUTE` (its path is whatever the block
   says) with the db templates' items and detail pages.
 - Every other route gets a stub `pages/<module>.py`: `@rx.page` with the
-  label as title, returning `base_page(rx.heading(label), rx.text("Not built
-  yet."))`. A section sharing its route with a sub-item gets one page, titled
-  after the sub-item.
+  label as title, returning
+  `base_page(rx.vstack(rx.heading(label), rx.text("Not built yet.")))` —
+  `base_page` takes exactly one child. A section sharing its route with a
+  sub-item gets one page, titled after the sub-item.
 - Constants: `/` → `HOME_ROUTE`, otherwise the path's segments in
   UPPER_SNAKE plus `_ROUTE` (`/reports/monthly` → `REPORTS_MONTHLY_ROUTE`).
   Modules: the last segment in snake_case, `/` → `home`.

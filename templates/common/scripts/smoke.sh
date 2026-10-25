@@ -26,7 +26,13 @@ for p in "$fport" "$bport"; do
 done
 
 if [ -d alembic ]; then
-  uv run --quiet reflex db migrate >/dev/null
+  # Quiet on success (alembic and SQLAlchemy warnings go to stderr), detail on
+  # failure.
+  if ! out=$(uv run --quiet reflex db migrate 2>&1); then
+    echo "FAIL reflex db migrate"
+    printf '%s\n' "$out" | tail -n 30
+    exit 1
+  fi
 fi
 
 routes=$(uv run --quiet python - <<'EOF'
