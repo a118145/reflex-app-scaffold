@@ -41,7 +41,15 @@ Rendering any Radix component without declaring `RadixThemesPlugin` emits an
 
 `reflex[db]` extras are **not** installed by a plain `reflex` install —
 `sqlmodel`, `sqlalchemy` and `alembic` are all absent. Run
-`uv add "reflex[db]"`.
+`uv add "reflex[db]" greenlet`. `greenlet` is required too: `reflex.model`
+imports `sqlalchemy.ext.asyncio`, which raises `ImportError` without it (so
+`reflex init` and every compile fail), and `reflex[db]` does not depend on it.
+
+**Datetimes must be timezone-aware.** sqlmodel ≥ 0.0.48 maps `datetime`
+fields to `UTCDateTime`: binding a naive value raises `ValueError: Datetime
+values must have timezone information` at insert time, and values come back
+UTC-aware. Use `datetime.now(UTC)`; attach a zone to parsed form input
+before persisting it.
 
 ```python
 from reflex.model import ModelRegistry
@@ -154,3 +162,32 @@ mypy cannot see through the Var system: at class level `State.items` is a
 
 For SQLModel `order_by`, use `sqlmodel.col(Model.field)` — the bare attribute
 is typed as its Python type, not a column.
+
+## Router data reaches the browser
+
+`State.router` is an ordinary state field, and its serializer includes
+`headers` — every WebSocket handshake header, **`cookie` included**, plus
+`raw_headers`. Verified in a browser: an HttpOnly cookie's value appears in
+the WebSocket frames. Never rely on HttpOnly for a cookie a Reflex app
+receives, and never put anything secret in a header the browser sends. (The
+reflex-auth-boilerplate skill strips its session cookie in an event
+middleware for exactly this reason.) `router.session.client_ip` trusts
+`X-Forwarded-For` blindly.
+
+## Forms
+
+- `rx.form` **and** `rx.el.form` always attach an `onSubmit` that calls
+  `preventDefault` (`Form.create` installs one when no `on_submit` is
+  given): neither can do a native POST to a URL. A bare
+  `rx.Component` with `tag = "form"` and
+  `_is_tag_in_global_scope = True` can. Without that flag the tag compiles to
+  a JS identifier — dev mode tolerates it, the production build fails with
+  `ReferenceError: form is not defined`.
+- `rx.input(auto_complete=...)` is a **bool** on the Radix TextField. For
+  the HTML attribute use `custom_attrs={"autoComplete": "email"}`.
+
+## Production build
+
+`reflex run --env prod` serves the static frontend, which redirects `/data`
+to `/data/` (307). Compare paths without a trailing slash.
+`--single-port` requires `--env prod`.
