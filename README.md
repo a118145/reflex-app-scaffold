@@ -19,7 +19,23 @@ the companion skill
   helpers, and cards.
 - Optional **SQLModel + SQLite + Alembic** with a working CRUD page, including
   form-string → model-type casting with per-field validation errors.
-- structlog, mypy, ruff and pytest already wired up.
+- structlog, mypy, ruff and pytest already wired up, behind two scripts:
+  `scripts/check.sh` (lint, format, types, tests; `--full` adds
+  `reflex compile` with zero deprecation warnings) and `scripts/smoke.sh`
+  (starts the app, expects 200 on every route, stops it).
+- `AGENTS.md` / `CLAUDE.md` with the project conventions, and
+  `docs/reflex-facts.md` with the verified API facts, so later coding agents
+  start from the same ground truth.
+- **No phoning home**: `telemetry_enabled=False`, `reflex init --no-agents`
+  (no AGENTS.md download), no PyPI version check during the scaffold.
+
+## Non-interactive (crew mode)
+
+With a `Masterplan.md` in the target directory that contains a
+`yaml crew-scaffold` block (app name, layout, database, the full nav tree),
+the skill skips the interview, validates the block, and generates a stub page
+for every route — so parallel work afterwards touches disjoint page files.
+Invalid or incomplete block: it stops and lists the problems.
 
 ## Install
 

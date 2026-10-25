@@ -2,7 +2,11 @@
 
 config = rx.Config(
     app_name="{{app_name}}",
-{{DB_URL_LINE}}    default_color_mode="system",
+{{DB_URL_LINE}}    # No phoning home: Reflex sends usage telemetry to PostHog unless this is
+    # off. REFLEX_TELEMETRY_ENABLED=false does the same per process; this line
+    # covers every way the app is started.
+    telemetry_enabled=False,
+    default_color_mode="system",
     plugins=[
         # Declare the theme here, not via rx.App(theme=...) — that argument is
         # deprecated in 0.9.x. Declaring the plugin explicitly also suppresses
