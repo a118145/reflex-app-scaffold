@@ -6,3 +6,7 @@
 # Reflex. `reflex.lock/` is deliberately NOT ignored: it is Reflex's frozen
 # JS lockfile (bun.lock + package.json), the frontend counterpart of uv.lock.
 # Commit it, or every fresh checkout and CI build resolves new JS versions.
+
+# Agent tooling: Claude Code worktrees and crew state stay local.
+.claude/worktrees/
+.crew/

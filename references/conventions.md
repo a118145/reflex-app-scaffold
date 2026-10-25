@@ -1,13 +1,15 @@
 # Conventions block for generated apps
 
-Append this to the generated `AGENTS.md`, **outside** the
-`<!-- reflex managed ... -->` markers (`reflex init` rewrites the inside).
-`CLAUDE.md` created by `reflex init` is just `@AGENTS.md`, so this reaches
-Claude Code sessions too. Replace `{{app_name}}` and drop folder-contract rows
-for folders the app does not have — a database-less app has no `models/`, and
-documenting a folder that is not there sends the next reader looking for it.
-Nothing outside the table names an individual folder, so the table is the only
-place that needs pruning.
+Write this as the generated `AGENTS.md` (everything below the `---`), and
+write `CLAUDE.md` containing exactly `@AGENTS.md` so Claude Code sessions read
+it too. `reflex init --no-agents` creates neither file, which is deliberate:
+the stock AGENTS.md is downloaded from GitHub at init time and points agents at
+an external plugin marketplace.
+
+Replace `{{app_name}}` and prune what the app does not have: drop
+folder-contract rows for missing folders (a database-less app has no
+`models/`), and drop the **Database** rules when there is no database.
+Documenting something that is not there sends the next reader looking for it.
 
 ---
 
@@ -29,6 +31,9 @@ advice. Read it before editing.
 | `pages/` | One module per page. Composes components. |
 | `states/` | All other states. |
 | `utils/` | Casting, formatting, validation, logging. |
+| `scripts/check.sh` | The gate. `--full` adds `reflex compile`. |
+| `scripts/smoke.sh` | Starts the app, checks every route, stops it. |
+| `docs/reflex-facts.md` | Verified Reflex 0.9.8 API facts. |
 
 ## Rules
 
@@ -57,6 +62,32 @@ advice. Read it before editing.
    handler so the dialog stays open with the user's input intact.
 
 7. **Never mount a second toaster.** `rx.App` provides one.
+
+8. **Read `docs/reflex-facts.md` before writing Reflex code.** It records the
+   API as it is in the installed version; much Reflex material online (and in
+   model memory) is stale.
+
+9. **The gate is `scripts/check.sh`.** Run it before every commit; green means
+   exit 0. `scripts/check.sh --full` adds `reflex compile` with zero
+   deprecation warnings. Do not start `reflex run` unless asked —
+   `scripts/smoke.sh` is the runtime check, and it binds ports 3000/8000.
+
+10. **No phoning home.** `telemetry_enabled=False` stays in `rxconfig.py`. No
+    analytics, trackers, CDN assets or calls to external services unless the
+    project explicitly asks for them.
+
+## Database
+
+- Schema changes only through migrations:
+  `uv run reflex db makemigrations --message "<what>"`, then
+  `uv run reflex db migrate`. Never edit or regenerate an existing revision;
+  keep a single head.
+- Autogenerate ignores column **type** changes (`compare_type=False`). A type
+  change needs a hand-written migration (`op.alter_column(..., type_=...)`
+  inside `with op.batch_alter_table(...)` for SQLite).
+- Models stay portable between SQLite and Postgres: standard SQLModel/
+  SQLAlchemy types only, no dialect-specific types (JSONB, ARRAY), no raw SQL.
+  The database is chosen only by `REFLEX_DB_URL`.
 
 ## Type checking
 

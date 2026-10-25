@@ -77,6 +77,29 @@ When creating tables against a non-Reflex database, always filter:
 `SQLModel.metadata.create_all(engine, tables=[...])` — never bare
 `create_all(engine)`, which would create every registered model there.
 
+Autogenerate (`reflex db makemigrations`) runs alembic with
+`compare_type=False` and `render_as_batch=True` (`reflex/model.py`). Batch mode
+makes SQLite `ALTER`s work; but **column type changes are not detected** — the
+revision comes out empty for them. Write that migration by hand
+(`op.alter_column(..., type_=...)` inside `op.batch_alter_table`).
+
+## Network and telemetry
+
+| What | Default | Off |
+|---|---|---|
+| Usage telemetry to PostHog (`app.posthog.com`) on init/run/compile | on | `telemetry_enabled=False` in `rx.Config`, or `REFLEX_TELEMETRY_ENABLED=false` |
+| "Newer version available" check against PyPI | on | `REFLEX_CHECK_LATEST_VERSION=false` |
+| `reflex init` downloads AGENTS.md from `raw.githubusercontent.com` | on | `reflex init --no-agents` |
+| No bun ≥ 1.3.0 in `~/.reflex` or on PATH → install script from `raw.githubusercontent.com` is downloaded and run | — | bun on PATH (pinned, in the image), or `REFLEX_USE_NPM=1` with Node |
+
+Any `rx.Config` field can be overridden with `REFLEX_<FIELD>` (e.g.
+`REFLEX_DB_URL`, `REFLEX_FRONTEND_PORT`).
+
+`reflex compile` (also `--dry`) re-initialises when `.web/` is missing or was
+built by another Reflex version — that includes the frontend package install.
+In a fresh checkout or git worktree the first compile is therefore slow and
+needs the npm registry.
+
 ## State
 
 - MRO: `rx.State → reflex.state.BaseState → EvenMoreBasicBaseState`.

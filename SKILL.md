@@ -1,6 +1,6 @@
 ---
 name: reflex-app-scaffold
-description: Scaffold a new Reflex (reflex.dev) web application with a config-driven navigation, base page template, dialogs/toasts, optional SQLModel+alembic CRUD, structlog, and mypy/ruff/pytest wiring. Use when the user wants to start a new Reflex app, scaffold a Reflex project, create a Reflex boilerplate, or set up the folder structure for a Reflex web app. Not for adding a page to an existing app.
+description: Scaffold a new Reflex (reflex.dev) web application with a config-driven navigation, base page template, dialogs/toasts, optional SQLModel+alembic CRUD, structlog, and mypy/ruff/pytest wiring. Use when the user wants to start a new Reflex app, scaffold a Reflex project, create a Reflex boilerplate, or set up the folder structure for a Reflex web app. Also runs non-interactively from the `crew-scaffold` block of a Masterplan.md (crew mode). Not for adding a page to an existing app.
 ---
 
 # Reflex app scaffold
@@ -13,6 +13,44 @@ secure-by-default authorization), which expects exactly this folder contract.
 **Read `references/reflex_098_gotchas.md` before writing any Reflex code.** It
 records API facts verified against the installed source; a lot of Reflex
 material online is stale and will lead you to write deprecated code.
+
+## Crew mode — no interview
+
+If the target directory has a `Masterplan.md` with a fenced block tagged
+`yaml crew-scaffold`, or the caller says "crew", take every answer from that
+block and skip Step 1 entirely. Ask nothing: the plan was settled before you
+were called. Anything missing or invalid — stop, list the problems, change
+nothing.
+
+| Key | Valid | Maps to |
+|---|---|---|
+| `app_name` | snake_case identifier | `{{app_name}}` |
+| `app_title` | any string | `{{app_title}}` |
+| `layout` | `both` \| `top` \| `side` | layout variant |
+| `database` | `none` \| `sqlite` | database == no \| yes |
+| `nav_alignment` | `left` \| `center` | `{{nav_alignment}}` (ignored for `side`) |
+| `accent` | Radix accent, default `blue` | `{{accent_color}}` |
+| `nav` | list of `{label, route, icon?, sub_items?, crud?}` | `NAV_ITEMS` |
+
+Checks: every entry and sub-item has a `route` starting with `/`; routes are
+unique except that a section may share its route with one of its own
+sub-items; `sub_items` only with `both` or `side`; with `sqlite` exactly one
+entry or sub-item has `crud: true`, with `none` none does. Missing `icon` →
+`circle`.
+
+The nav tree is complete by design: **every route in it gets a page**, so the
+lanes that come after the scaffold only touch their own page files.
+- The `crud: true` entry becomes `DATA_ROUTE` (its path is whatever the block
+  says) with the db templates' items and detail pages.
+- Every other route gets a stub `pages/<module>.py`: `@rx.page` with the
+  label as title, returning `base_page(rx.heading(label), rx.text("Not built
+  yet."))`. A section sharing its route with a sub-item gets one page, titled
+  after the sub-item.
+- Constants: `/` → `HOME_ROUTE`, otherwise the path's segments in
+  UPPER_SNAKE plus `_ROUTE` (`/reports/monthly` → `REPORTS_MONTHLY_ROUTE`).
+  Modules: the last segment in snake_case, `/` → `home`.
+
+Then continue with Step 2. Do not commit; the caller does.
 
 ## Step 1 — Interview
 
@@ -68,10 +106,11 @@ once, offer a default, move on.
 Run in the target directory (create it if the user named a new one):
 
 ```bash
+export REFLEX_TELEMETRY_ENABLED=false REFLEX_CHECK_LATEST_VERSION=false
 uv init --bare                      # skip if pyproject.toml already exists
 uv add reflex structlog             # database == yes: "reflex[db]" greenlet instead of reflex
 uv add --dev mypy ruff pytest
-uv run reflex init --template blank
+uv run reflex init --template blank --no-agents
 rm -f main.py                       # uv init leaves a stub
 ```
 
@@ -79,12 +118,14 @@ rm -f main.py                       # uv init leaves a stub
 but `reflex.model` imports `sqlalchemy.ext.asyncio`, which needs it — without
 it `reflex init` itself fails.
 
-`reflex init` creates `rxconfig.py`, `assets/`, `{{app_name}}/{{app_name}}.py`,
-`AGENTS.md` and `CLAUDE.md`.
+`reflex init` creates `rxconfig.py`, `assets/` and
+`{{app_name}}/{{app_name}}.py`. The two exported variables keep it from sending
+telemetry and from asking PyPI for a newer version.
 
-`AGENTS.md` tells you to install the `reflex-dev/agent-skills` plugin
-marketplace. **Do not run that install** unless the user asks — you already
-have verified API facts in `references/`.
+`--no-agents` skips `AGENTS.md` and `CLAUDE.md`. Without it, Reflex downloads
+an AGENTS.md from GitHub at init time that points agents at an external plugin
+marketplace — third-party instructions and a network call. You write both
+files yourself in Step 3, from `references/`.
 
 ## Step 3 — Write the tree
 
@@ -112,8 +153,11 @@ templates/common/          -> always
   utils/{__init__,casting,formatting,validation,logging}.py
   pages/not_found.py
   tests/{test_navigation,test_routes}.py.tmpl
+  scripts/{check,smoke}.sh      -> scripts/  (chmod +x)
   pyproject_additions.toml      -> append to pyproject.toml
   gitignore_additions           -> append to .gitignore
+
+references/reflex_098_gotchas.md -> docs/reflex-facts.md (verbatim)
 
 templates/layout_{both,top,side}/ui/   -> pick ONE, copy into {{app_name}}/ui/
 templates/nav_config/nav_config.py.tmpl -> {{app_name}}/navigation/nav_config.py
@@ -153,8 +197,8 @@ Then write by hand, from the interview answers:
   route registration.
 - **`states/__init__.py`**, **`models/__init__.py`** — re-export as needed.
   **`components/__init__.py` must stay free of re-exports** (see below).
-- **`AGENTS.md`** — append `references/conventions.md` outside the
-  `<!-- reflex managed -->` markers.
+- **`AGENTS.md`** — the conventions block from `references/conventions.md`,
+  pruned as described there. **`CLAUDE.md`** — exactly `@AGENTS.md`.
 - **`README.md`** — run commands, layout table, "adding a page" steps.
 
 Fill the test placeholders: `{{EXPECTED_ROUTES}}` (every `routes.py` constant)
@@ -206,27 +250,27 @@ Anything listed outside the app package, `tests/`, `rxconfig.py` and
 `extend-exclude` — fix that before formatting.
 
 Then format (hand-written `routes.py` / `nav_config.py` / test parameters
-will not be formatter-clean), and all four must pass:
+will not be formatter-clean) and run the full gate:
 
 ```bash
 uv run ruff format .
-uv run reflex compile 2>&1 | grep -i deprecat   # must print nothing
-uv run pytest -q
-uv run mypy .
-uv run ruff check . && uv run ruff format --check .
+scripts/check.sh --full     # ruff, format check, mypy, pytest, reflex compile
 ```
 
-A deprecation warning means a fact in `references/reflex_098_gotchas.md` was
-missed. Fix it rather than suppressing the warning.
+Every line must read `ok`. A deprecation warning fails the gate: it means a
+fact in `references/reflex_098_gotchas.md` was missed. Fix it rather than
+suppressing the warning.
 
 Exit codes are not enough on their own: `ruff format` reports success no
 matter how many files it touched, so check *what* a tool acted on, not only
 whether it succeeded.
 
-Then start the app (`uv run reflex run`) and confirm each route returns 200:
+Then the runtime check. It starts the app on 3000/8000, expects 200 on every
+static route in `routes.py` and on the backend's `/ping`, fails on a traceback
+in the log, and stops the app again:
 
 ```bash
-for p in / /your /routes; do curl -s -o /dev/null -w "%{http_code} $p\n" "http://localhost:3000$p"; done
+scripts/smoke.sh
 ```
 
 ## Invariants — do not "improve" these
@@ -250,3 +294,5 @@ was built to remove.
 5. **No second toaster.** `rx.App` already provides one.
 6. **mypy relaxations stay scoped** to `components.*` and `pages.*` in
    `pyproject.toml`. Never global, never scattered `# type: ignore`.
+7. **Telemetry stays off.** `telemetry_enabled=False` in `rxconfig.py`,
+   `--no-agents` on init. The generated app makes no calls home.
