@@ -82,6 +82,9 @@ def _cast_scalar(value: str, target: Any) -> Any:
         except InvalidOperation as exc:
             raise ValueError(f"{value!r} is not a decimal number") from exc
     if target is datetime:
+        # Naive unless the string carries an offset. sqlmodel >= 0.0.48
+        # rejects naive datetimes on insert: attach the zone the form means
+        # (``.replace(tzinfo=...)``) before persisting.
         return datetime.fromisoformat(value)
     if target is date:
         return date.fromisoformat(value)

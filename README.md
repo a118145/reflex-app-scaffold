@@ -4,7 +4,9 @@ A [Claude Code](https://claude.com/claude-code) skill that scaffolds a
 [Reflex](https://reflex.dev) web application from a short interview: app name,
 layout, database, and the nav tree.
 
-No authentication — that is deliberately out of scope.
+No authentication — that is deliberately out of scope. Add it afterwards with
+the companion skill
+[reflex-auth-boilerplate](https://github.com/a118145/reflex-auth-boilerplate).
 
 ## What it generates
 
@@ -30,7 +32,7 @@ Skills load on the next Claude Code session. Then ask for a new Reflex app.
 
 ## Verified against
 
-Reflex 0.9.8. `references/reflex_098_gotchas.md` records the API surface read
+Reflex 0.9.8, sqlmodel 0.0.48. `references/reflex_098_gotchas.md` records the API surface read
 from the installed package source rather than from documentation — several
 widely-copied Reflex idioms (`rx.Base`, `rx.cached_var`, auto-setters,
 `rx.Model`, `App(theme=...)`, `router.page`) are removed or deprecated in this

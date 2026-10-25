@@ -6,7 +6,9 @@ description: Scaffold a new Reflex (reflex.dev) web application with a config-dr
 # Reflex app scaffold
 
 Generates a working, no-auth Reflex app with a fixed folder contract.
-Authentication is deliberately out of scope.
+Authentication is deliberately out of scope here: add it afterwards with the
+companion skill `reflex-auth-boilerplate` (magic links, admin login,
+secure-by-default authorization), which expects exactly this folder contract.
 
 **Read `references/reflex_098_gotchas.md` before writing any Reflex code.** It
 records API facts verified against the installed source; a lot of Reflex
@@ -67,11 +69,15 @@ Run in the target directory (create it if the user named a new one):
 
 ```bash
 uv init --bare                      # skip if pyproject.toml already exists
-uv add reflex structlog             # add "reflex[db]" instead if database == yes
+uv add reflex structlog             # database == yes: "reflex[db]" greenlet instead of reflex
 uv add --dev mypy ruff pytest
 uv run reflex init --template blank
 rm -f main.py                       # uv init leaves a stub
 ```
+
+`greenlet` is not optional with a database: `reflex[db]` does not pull it in,
+but `reflex.model` imports `sqlalchemy.ext.asyncio`, which needs it — without
+it `reflex init` itself fails.
 
 `reflex init` creates `rxconfig.py`, `assets/`, `{{app_name}}/{{app_name}}.py`,
 `AGENTS.md` and `CLAUDE.md`.

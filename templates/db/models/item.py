@@ -4,9 +4,12 @@
 directly and register the class so ``reflex db makemigrations`` can see it.
 
 ``ModelRegistry.register`` works as a decorator or a plain call.
+
+Timestamps are timezone-aware UTC: sqlmodel >= 0.0.48 stores ``datetime``
+columns as ``UTCDateTime`` and rejects naive values at insert time.
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from reflex.model import ModelRegistry
@@ -20,4 +23,4 @@ class Item(SQLModel, table=True):
     quantity: int = Field(default=0)
     price: Decimal = Field(default=Decimal("0"), max_digits=12, decimal_places=2)
     note: str | None = Field(default=None)
-    created_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

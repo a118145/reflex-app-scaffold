@@ -11,6 +11,7 @@ key/value pairs stay machine-readable when JSON rendering is on.
 
 import logging
 import os
+import sys
 
 import structlog
 from structlog.stdlib import BoundLogger
@@ -33,6 +34,12 @@ def configure_logging(json_logs: bool | None = None, level: str = "INFO") -> Non
 
     if json_logs is None:
         json_logs = os.environ.get("REFLEX_ENV_MODE", "dev") == "prod"
+
+    # structlog hands each line to the stdlib logger (LoggerFactory below).
+    # Without a handler and level on the stdlib side, Python's last-resort
+    # handler prints WARNING and above only — every log.info() would vanish.
+    # basicConfig is a no-op if something already configured the root logger.
+    logging.basicConfig(format="%(message)s", stream=sys.stdout, level=level)
 
     renderer: structlog.types.Processor = (
         structlog.processors.JSONRenderer()
