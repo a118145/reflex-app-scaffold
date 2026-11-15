@@ -154,6 +154,7 @@ templates/common/          -> always
   utils/{__init__,casting,formatting,validation,logging}.py
   pages/not_found.py
   tests/{test_navigation,test_routes}.py.tmpl
+  tests/{__init__,conftest,test_deprecations}.py
   scripts/{check,smoke}.sh      -> scripts/  (chmod +x)
   pyproject_additions.toml      -> append to pyproject.toml
   gitignore_additions           -> append to .gitignore
@@ -260,7 +261,14 @@ scripts/check.sh --full     # ruff, format check, mypy, pytest, reflex compile
 
 Every line must read `ok`. A deprecation warning fails the gate: it means a
 fact in `references/reflex_098_gotchas.md` was missed. Fix it rather than
-suppressing the warning.
+suppressing the warning. That holds for the tests too: Reflex 0.11 only
+*logs* deprecations, which pytest hides, so `tests/conftest.py` turns every
+Reflex deprecation into a failure (`reflex compile` reports its own, which
+`check.sh --full` fails on). Never remove that guard to get green.
+
+`tests/` is a package (`__init__.py`): test modules import shared helpers
+with `from .conftest import ...`. Keep the guard at the top of
+`conftest.py`; fixtures that import the app go below it.
 
 Exit codes are not enough on their own: `ruff format` reports success no
 matter how many files it touched, so check *what* a tool acted on, not only

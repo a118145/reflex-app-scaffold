@@ -22,7 +22,8 @@ the companion skill
 - structlog, mypy, ruff and pytest already wired up, behind two scripts:
   `scripts/check.sh` (lint, format, types, tests; `--full` adds
   `reflex compile` with zero deprecation warnings) and `scripts/smoke.sh`
-  (starts the app, expects 200 on every route, stops it).
+  (starts the app, expects 200 on every route, stops it). Tests fail on any
+  Reflex deprecation, which Reflex itself only writes to its log.
 - `AGENTS.md` / `CLAUDE.md` with the project conventions, and
   `docs/reflex-facts.md` with the verified API facts, so later coding agents
   start from the same ground truth.

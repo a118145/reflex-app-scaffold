@@ -28,11 +28,17 @@ shell: `reflex/config.py` is four lines. Real definitions live in
 
 ## Deprecated (still work, will warn)
 
+"Warn" means a record of the `reflex.deprecation` logger (Reflex 0.11), once
+per call site and process — not a Python `DeprecationWarning`. pytest shows
+neither; `tests/conftest.py` turns such records into test failures, and
+`reflex compile` prints the ones it hits.
+
 | Deprecated | Replacement |
 |---|---|
 | `rx.App(theme=...)` | `rx.plugins.RadixThemesPlugin(theme=rx.theme(...))` in `rxconfig.py` |
 | `rx.Model` (removal 1.0) | `sqlmodel.SQLModel` + `reflex.model.ModelRegistry.register` |
 | `router.page.*` | `router.url.path`, `router.url.query_parameters`, `router.route_id` |
+| `reflex.page.DECORATED_PAGES` | `reflex_base.registry.RegistrationContext.ensure_context().decorated_pages` — a list of `(render_fn, kwargs)` |
 
 Rendering any Radix component without declaring `RadixThemesPlugin` emits an
 "implicit Radix Themes enablement" deprecation. Always declare it.

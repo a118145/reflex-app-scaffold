@@ -69,7 +69,9 @@ advice. Read it before editing.
 
 9. **The gate is `scripts/check.sh`.** Run it before every commit; green means
    exit 0. `scripts/check.sh --full` adds `reflex compile` with zero
-   deprecation warnings. Do not start `reflex run` unless asked —
+   deprecation warnings. Tests fail on any Reflex deprecation too: Reflex
+   only logs them, and `tests/conftest.py` turns the log record into a
+   failure at the call site. Fix the call, never the guard. Do not start `reflex run` unless asked —
    `scripts/smoke.sh` is the runtime check, and it binds ports 3000/8000.
 
 10. **No phoning home.** `telemetry_enabled=False` stays in `rxconfig.py`. No
