@@ -9,8 +9,8 @@ config = rx.Config(
     default_color_mode="system",
     plugins=[
         # Declare the theme here, not via rx.App(theme=...) — that argument is
-        # deprecated in 0.9.x. Declaring the plugin explicitly also suppresses
-        # the "implicit Radix Themes enablement" deprecation warning.
+        # deprecated (removal in 1.0). Declaring the plugin explicitly also
+        # suppresses the "implicit Radix Themes enablement" deprecation warning.
         rx.plugins.RadixThemesPlugin(
             theme=rx.theme(
                 accent_color="{{accent_color}}",

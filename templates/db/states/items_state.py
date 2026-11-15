@@ -3,9 +3,9 @@
 Flat state: subclasses ``rx.State`` directly. Other states reach it with
 ``await self.get_state(ItemsState)`` rather than through inheritance.
 
-Note there are no implicit setters — Reflex 0.9.x ships with
-``state_auto_setters=False``, so ``ItemsState.set_dialog_open`` only exists
-because it is written out below.
+Note there are no implicit setters — ``state_auto_setters`` defaults to
+False (and setting it at all is deprecated since 0.11), so
+``ItemsState.set_dialog_open`` only exists because it is written out below.
 """
 
 from typing import Any

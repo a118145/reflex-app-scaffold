@@ -48,15 +48,19 @@ Skills load on the next Claude Code session. Then ask for a new Reflex app.
 
 ## Verified against
 
-Reflex 0.9.8, sqlmodel 0.0.48. `references/reflex_098_gotchas.md` records the API surface read
-from the installed package source rather than from documentation — several
-widely-copied Reflex idioms (`rx.Base`, `rx.cached_var`, auto-setters,
-`rx.Model`, `App(theme=...)`, `router.page`) are removed or deprecated in this
-version.
+Reflex **0.11.0** (pinned), sqlmodel 0.0.50, bun 1.4.4.
+`references/reflex_facts.md` records the API surface read from the installed
+package source rather than from documentation — several widely-copied Reflex
+idioms (`rx.Base`, `rx.cached_var`, auto-setters, `rx.Model`,
+`App(theme=...)`, `router.page`, `DECORATED_PAGES`) are removed or deprecated
+in this version — and what changed since 0.9.8.
 
 All six combinations (3 layouts × database on/off) are round-trip tested: each
-generated app compiles with zero deprecation warnings and passes its own
-tests, mypy and ruff.
+generated app compiles with zero deprecation warnings, passes its own tests,
+mypy and ruff, and serves every route (`scripts/smoke.sh`). The same pin is
+used by
+[reflex-auth-boilerplate](https://github.com/a118145/reflex-auth-boilerplate);
+apps from this scaffold were re-checked with it applied.
 
 ## Layout
 

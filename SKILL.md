@@ -10,9 +10,14 @@ Authentication is deliberately out of scope here: add it afterwards with the
 companion skill `reflex-auth-boilerplate` (magic links, admin login,
 secure-by-default authorization), which expects exactly this folder contract.
 
-**Read `references/reflex_098_gotchas.md` before writing any Reflex code.** It
-records API facts verified against the installed source; a lot of Reflex
-material online is stale and will lead you to write deprecated code.
+**Read `references/reflex_facts.md` before writing any Reflex code.** It
+records API facts verified against the installed source of **Reflex 0.11.0**,
+the version this skill pins; a lot of Reflex material online is stale and will
+lead you to write deprecated code.
+
+The pin is shared with `reflex-auth-boilerplate`, whose gate rests on private
+Reflex behaviour verified for exactly this release. Do not scaffold onto
+another version; moving the pin means re-verifying both skills.
 
 ## Crew mode — no interview
 
@@ -109,19 +114,24 @@ Run in the target directory (create it if the user named a new one):
 ```bash
 export REFLEX_TELEMETRY_ENABLED=false REFLEX_CHECK_LATEST_VERSION=false
 uv init --bare                      # skip if pyproject.toml already exists
-uv add reflex structlog             # database == yes: "reflex[db]" greenlet instead of reflex
+uv add "reflex==0.11.0" pydantic structlog   # database == yes: "reflex[db]==0.11.0" instead of "reflex==0.11.0"
 uv add --dev mypy ruff pytest
-uv run reflex init --template blank --no-agents
+uv run reflex init --name {{app_name}} --template blank --no-agents
 rm -f main.py                       # uv init leaves a stub
 ```
 
-`greenlet` is not optional with a database: `reflex[db]` does not pull it in,
-but `reflex.model` imports `sqlalchemy.ext.asyncio`, which needs it — without
-it `reflex init` itself fails.
+Pin exactly `0.11.0` (see above). `reflex[db]` brings `sqlmodel`, `alembic`
+and — since 0.10 — `greenlet`, which `reflex.model` needs; a plain `reflex`
+install has none of them. **`pydantic` is listed explicitly**: `utils/casting.py`
+and `utils/validation.py` import it, and since 0.11 a plain `reflex` install
+no longer brings it (only `reflex[db]` or `reflex[pydantic]` do) — without it
+a database-less app does not even import.
 
-`reflex init` creates `rxconfig.py`, `assets/` and
-`{{app_name}}/{{app_name}}.py`. The two exported variables keep it from sending
-telemetry and from asking PyPI for a newer version.
+`reflex init` creates `rxconfig.py`, `assets/`, `.gitignore` and
+`{{app_name}}/{{app_name}}.py`; `--name` keeps the package name independent of
+the directory name. The two exported variables keep it from sending telemetry
+and from asking PyPI for a newer version. Reflex needs bun ≥ 1.4.4 on PATH (or
+in `~/.reflex`); otherwise it downloads its own.
 
 `--no-agents` skips `AGENTS.md` and `CLAUDE.md`. Without it, Reflex downloads
 an AGENTS.md from GitHub at init time that points agents at an external plugin
@@ -153,12 +163,12 @@ templates/common/          -> always
   components/{__init__,toast,confirm_dialog,cards}.py
   utils/{__init__,casting,formatting,validation,logging}.py
   pages/not_found.py
-  tests/{test_navigation,test_routes}.py.tmpl
+  tests/{__init__.py,test_navigation.py.tmpl,test_routes.py.tmpl}
   scripts/{check,smoke}.sh      -> scripts/  (chmod +x)
   pyproject_additions.toml      -> append to pyproject.toml
   gitignore_additions           -> append to .gitignore
 
-references/reflex_098_gotchas.md -> docs/reflex-facts.md (verbatim)
+references/reflex_facts.md       -> docs/reflex-facts.md (verbatim)
 
 templates/layout_{both,top,side}/ui/   -> pick ONE, copy into {{app_name}}/ui/
 templates/nav_config/nav_config.py.tmpl -> {{app_name}}/navigation/nav_config.py
@@ -259,7 +269,7 @@ scripts/check.sh --full     # ruff, format check, mypy, pytest, reflex compile
 ```
 
 Every line must read `ok`. A deprecation warning fails the gate: it means a
-fact in `references/reflex_098_gotchas.md` was missed. Fix it rather than
+fact in `references/reflex_facts.md` was missed. Fix it rather than
 suppressing the warning.
 
 Exit codes are not enough on their own: `ruff format` reports success no
@@ -297,3 +307,12 @@ was built to remove.
    `pyproject.toml`. Never global, never scattered `# type: ignore`.
 7. **Telemetry stays off.** `telemetry_enabled=False` in `rxconfig.py`,
    `--no-agents` on init. The generated app makes no calls home.
+8. **Reflex stays pinned to 0.11.0**, the release `reflex-auth-boilerplate`
+   is verified for. Keep the auth skill's anchors intact too: it edits
+   `routes.py`, `nav_config.py` (`NavItem`, `NAV_ITEMS`), `ui/nav.py`,
+   `ui/side.py`, `pages/__init__.py`, the app module (`from . import pages`,
+   `app = rx.App()`), `rxconfig.py` (`import os`, `config = rx.Config(`,
+   `app_name=`, `db_url=`), `tests/test_routes.py` (`EXPECTED_ROUTES`) and
+   `utils/casting.py` by their scaffold text, and stops at an app that already
+   has `tests/conftest.py` — the scaffold does not write one. Its tests import
+   `from .conftest`, which is why `tests/__init__.py` exists.

@@ -5,11 +5,9 @@ The classic Reflex failure is a page module that is never imported: the
 the codebase looks wrong. This test makes that a build failure.
 """
 
-from reflex.config import get_config
-
-# `rx.page` is the decorator function; the registry lives on the module, which
-# Reflex swaps for a namespace class at import time.
-from reflex.page import DECORATED_PAGES
+# `@rx.page` records each page on the active registration context. The older
+# `reflex.page.DECORATED_PAGES` still works but is deprecated (since 0.9.9).
+from reflex_base.registry import RegistrationContext
 
 from {{app_name}} import {{app_name}} as app_module  # noqa: F401
 from {{app_name}}.navigation import nav_config, routes
@@ -20,7 +18,7 @@ EXPECTED_ROUTES = {
 
 
 def _registered_routes() -> set[str]:
-    decorated = DECORATED_PAGES[get_config().app_name]
+    decorated = RegistrationContext.ensure_context().decorated_pages
     return {page_args["route"] for _, page_args in decorated}
 
 

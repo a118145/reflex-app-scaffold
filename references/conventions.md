@@ -33,7 +33,7 @@ advice. Read it before editing.
 | `utils/` | Casting, formatting, validation, logging. |
 | `scripts/check.sh` | The gate. `--full` adds `reflex compile`. |
 | `scripts/smoke.sh` | Starts the app, checks every route, stops it. |
-| `docs/reflex-facts.md` | Verified Reflex 0.9.8 API facts. |
+| `docs/reflex-facts.md` | Verified Reflex 0.11.0 API facts. |
 
 ## Rules
 
@@ -64,8 +64,9 @@ advice. Read it before editing.
 7. **Never mount a second toaster.** `rx.App` provides one.
 
 8. **Read `docs/reflex-facts.md` before writing Reflex code.** It records the
-   API as it is in the installed version; much Reflex material online (and in
-   model memory) is stale.
+   API as it is in the pinned version; much Reflex material online (and in
+   model memory) is stale. Reflex is pinned to `0.11.0` in `pyproject.toml`
+   — do not upgrade it as a side effect; a new release is re-verified first.
 
 9. **The gate is `scripts/check.sh`.** Run it before every commit; green means
    exit 0. `scripts/check.sh --full` adds `reflex compile` with zero
